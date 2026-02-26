@@ -40,10 +40,12 @@ class DriftDancer(QWidget):
         # FramelessWindowHint: Fără margini
         # WindowStaysOnTopHint: Mereu deasupra
         # Tool: Ascunde aplicația din taskbar (opțional, dar bun pentru "desktop pets")
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | 
-                            Qt.WindowType.WindowStaysOnTopHint | 
-                            Qt.WindowType.Tool |
-                            Qt.WindowType.X11BypassWindowManagerHint)
+        flags = (Qt.WindowType.FramelessWindowHint |
+                 Qt.WindowType.WindowStaysOnTopHint |
+                 Qt.WindowType.Tool)
+        if platform.system() == "Linux":
+            flags |= Qt.WindowType.X11BypassWindowManagerHint
+        self.setWindowFlags(flags)
         
         # Atributul critic care spune sistemului de operare că fundalul e gol
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -69,6 +71,7 @@ class DriftDancer(QWidget):
             
             self.frames.append(pixmap)
 
+        self._drag_pos = None
         self.current_frame = 0
         self.smoke_particles = []
         
@@ -198,6 +201,34 @@ class DriftDancer(QWidget):
             # Centrare perfectă matematică
             painter.drawText(bubble_rect, Qt.AlignmentFlag.AlignCenter, self.current_meme)
 
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.MouseButton.LeftButton and self._drag_pos is not None:
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+
+    def mouseReleaseEvent(self, event):
+        self._drag_pos = None
+
+    def _apply_macos_window_level(self):
+        """Fix macOS NSPanel behaviour: don't hide on deactivate, float above other apps."""
+        try:
+            import objc
+            from AppKit import NSFloatingWindowLevel
+            ns_view = objc.objc_object(c_void_p=int(self.winId()))
+            ns_window = ns_view.window()
+            # Qt::Tool creates an NSPanel which hides itself when the app loses focus by default.
+            # This is why the window disappears when you click Safari / any other app.
+            ns_window.setHidesOnDeactivate_(False)
+            ns_window.setLevel_(NSFloatingWindowLevel)
+            # NSWindowCollectionBehaviorCanJoinAllSpaces = 1 << 0
+            # NSWindowCollectionBehaviorStationary    = 1 << 4
+            ns_window.setCollectionBehavior_(1 | 16)
+        except Exception as e:
+            print(f"[macOS] Could not set window level: {e}")
+
     # Permitem închiderea cu Escape
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
@@ -207,4 +238,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     dancer = DriftDancer()
     dancer.show()
+    if platform.system() == "Darwin":
+        dancer._apply_macos_window_level()
     sys.exit(app.exec())
