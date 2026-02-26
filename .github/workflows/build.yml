@@ -1,0 +1,57 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. Instalăm uv (Interfața noastră universală)
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      # 2. Setăm Python (uv îl poate gestiona și singur, dar păstrăm pasul pentru claritate în log-uri)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 3. Instalăm dependențele în mediul de sistem al runner-ului folosind uv
+      - name: Install dependencies
+        run: uv pip install --system PyQt6 pyinstaller
+
+      # 4. Compilăm pentru Windows folosind "uv run"
+      # uv run se asigură că pyinstaller este executat corect în contextul instalării anterioare
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
+        run: uv run pyinstaller --noconsole --onefile --add-data "frames;frames" main.py
+
+      # 5. Compilăm pentru Linux/macOS folosind "uv run"
+      - name: Build with PyInstaller (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: uv run pyinstaller --noconsole --onefile --add-data "frames:frames" main.py
+
+      # 6. Salvăm executabilele rezultate
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-dancer-${{ matrix.os }}
+          path: dist/*
