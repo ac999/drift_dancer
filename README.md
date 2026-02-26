@@ -1,8 +1,12 @@
-# 🚗 Bavarian Drift Dancer (Desktop Buddy)
+# 🚗 Drift Dancer (Desktop Buddy)
+
+
 
 A lightweight, cross-platform desktop buddy for car enthusiasts. Brings a drifting BMW directly to your desktop, complete with dynamic smoke particles, "Always on Top" functionality, and car culture memes. 
 
 Built with Python and PyQt6 for maximum performance and perfect transparency across Windows, macOS, and Linux (including Ubuntu/Wayland).
+
+<img src="./frames/frame_08.png" alt="drawing" style="width:200px;"/>
 
 ## ✨ Features
 * **Cross-Platform:** Runs flawlessly on Windows 10/11, macOS, and Linux.
@@ -14,8 +18,8 @@ Built with Python and PyQt6 for maximum performance and perfect transparency acr
 
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/USER/Bavarian_Drift_Dancer.git](https://github.com/USER/Bavarian_Drift_Dancer.git)
-   cd Bavarian_Drift_Dancer
+   git clone [https://github.com/ac999/drift_dancer.git](https://github.com/ac999/drift_dancer.git)
+   cd drift_dancer
 
 ```
 
@@ -28,7 +32,7 @@ pip install -r requirements.txt
 
 3. Run the app:
 ```bash
-python drift_dancer_qt.py
+python main.py
 
 ```
 
@@ -42,7 +46,7 @@ To build a standalone executable (`.exe`, `.app`, or Linux binary) so users don'
 
 ```bash
 pip install pyinstaller
-pyinstaller --noconsole --onefile --add-data "frames;frames" drift_dancer_qt.py
+pyinstaller --noconsole --onefile --add-data "frames;frames" main.py
 
 ```
 
@@ -50,7 +54,7 @@ pyinstaller --noconsole --onefile --add-data "frames;frames" drift_dancer_qt.py
 
 ```bash
 pip install pyinstaller
-pyinstaller --noconsole --onefile --add-data "frames:frames" drift_dancer_qt.py
+pyinstaller --noconsole --onefile --add-data "frames:frames" main.py
 
 ```
 
