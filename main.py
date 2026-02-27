@@ -19,14 +19,12 @@ FPS = 4
 FRAME_TIME = 1000 // FPS  # milisecunde
 MEME_INTERVAL = 6.0
 FRAME_COUNT = 24
-SCALE = 2.0
+SCALE = 2.5
 
 def resource_path(relative):
     if getattr(sys, 'frozen', False):
         base_path = sys._MEIPASS
-        possible_path = os.path.join(base_path, relative)
-        if os.path.exists(possible_path): return possible_path
-        return os.path.join(base_path, os.path.basename(relative))
+        return os.path.join(base_path, relative)
     return os.path.join(os.path.abspath("."), relative)
 
 # =============================
@@ -54,22 +52,31 @@ class DriftDancer(QWidget):
         self.resize(500, 350)
         self.position_window()
 
-        # Încărcare cadre (Frames)
-        self.frames = []
-        for i in range(FRAME_COUNT):
-            path = resource_path(f"frames/frame_{i:02d}.png")
-            if not os.path.exists(path):
-                print(f"Eroare: Lipseste {path}")
-                sys.exit(1)
-            
-            pixmap = QPixmap(path)
-            # Scalare dacă e necesar
-            if SCALE != 1.0:
-                new_w = int(pixmap.width() / SCALE)
-                new_h = int(pixmap.height() / SCALE)
-                pixmap = pixmap.scaled(new_w, new_h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            
-            self.frames.append(pixmap)
+        # Încărcare toate mașinile (Frames din subfoldere)
+        self.car_folders = ["car1", "car2", "car3", "car4"] # Aici pui numele folderelor tale
+        self.all_cars_frames = []
+        
+        for folder in self.car_folders:
+            car_frames = []
+            for i in range(FRAME_COUNT):
+                path = resource_path(f"frames/{folder}/frame_{i+1:02d}.png")
+                if not os.path.exists(path):
+                    print(f"Eroare: Lipseste {path}")
+                    sys.exit(1)
+                
+                pixmap = QPixmap(path)
+                if SCALE != 1.0:
+                    new_w = int(pixmap.width() / SCALE)
+                    new_h = int(pixmap.height() / SCALE)
+                    pixmap = pixmap.scaled(new_w, new_h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                
+                car_frames.append(pixmap)
+            self.all_cars_frames.append(car_frames)
+
+        # Setăm mașina activă la pornire
+        self.current_car_index = 0
+        self.frames = self.all_cars_frames[self.current_car_index]
+        self.current_frame = 0
 
         self._drag_pos = None
         self.current_frame = 0
@@ -91,7 +98,7 @@ class DriftDancer(QWidget):
             "Suspensie sport sau telescoape scurse?",
             "Mai duce un sezon (cuzineții: 💀).",
             "Nu-s chele, sunt slickuri 👮🏻‍♂️.",
-            "🥺👉👈 Mi-a scapat pedala de ambreiaj. 🚔",
+            "🥺👉👈 Mi-a scapat pedala. 🚔",
             "M-am uitat pe sub ea... mai are un pic și cade.",
             "⚠️ CHECK ENGINE"
         ]
@@ -204,13 +211,19 @@ class DriftDancer(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self._click_start_pos = event.globalPosition().toPoint()
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.MouseButton.LeftButton and self._drag_pos is not None:
             self.move(event.globalPosition().toPoint() - self._drag_pos)
 
     def mouseReleaseEvent(self, event):
-        self._drag_pos = None
+        diff = event.globalPosition().toPoint() - self._click_start_pos
+        # manhattanLength() e o metodă rapidă de a calcula distanța în pixeli
+        # Dacă s-a mișcat mai puțin de 5 pixeli, este considerat un "Click" (schimbă mașina)
+        if diff.manhattanLength() < 5:
+            self.current_car_index = (self.current_car_index + 1) % len(self.all_cars_frames)
+            self.frames = self.all_cars_frames[self.current_car_index]
 
     def _apply_macos_window_level(self):
         """Fix macOS NSPanel behaviour: don't hide on deactivate, float above other apps."""
